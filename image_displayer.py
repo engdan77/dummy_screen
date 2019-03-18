@@ -1,4 +1,4 @@
-import Tkinter as tkinter
+import Tkinter as tk
 from PIL import Image
 import sys
 from io import BytesIO
@@ -16,35 +16,50 @@ def get_image_data(input_file=None, base64_data=None, input_format='png'):
     image.save(filename)
     return filename
 
+class MyWindow:
+    def __init__(self, root):
+        self.root = root
+        self.root.configure(background="black")
 
-def quit_ui(*args):
-    print args
-    sys.exit(0)
+    def display_image(self, image_file):
+        self.canvas = tk.Canvas(self.root)
+        self.canvas.pack(fill=tk.BOTH, expand=tk.YES)
+        self.canvas.configure(background='black')
+        self.converted_image = tk.PhotoImage(file=image_file)
+        self.image_canvas = self.canvas.create_image(0, 0, anchor="nw", image=self.converted_image)
+        return self.image_canvas
 
+    def make_fullscreen(self):
+        self.root.overrideredirect(True)
+        self.root.overrideredirect(False)
+        self.root.attributes('-fullscreen', True)
+        self.root.bind("<Escape>", self.quit_ui)
 
-def callback():
-    print("click!")
+    def display_label(self, input_text):
+        w = tk.Label(self.root, text=input_text)
+        w.pack()
 
+    def quit_ui(*args):
+        print args
+        sys.exit(0)
+
+    def clear(self):
+        list = self.root.slaves()
+        for l in list:
+            l.destroy()
 
 def run():
     IMAGE ='./image.gif'
-    image_data = get_image_data(input_file=IMAGE)
-    root = tkinter.Tk()
-    root.configure(background="black")
+    image_file = get_image_data(input_file=IMAGE)
+    root = tk.Tk()
 
-    canvas = tkinter.Canvas(root)
-    canvas.pack(fill=tkinter.BOTH, expand=tkinter.YES)
-    canvas.configure(background='black')
-
-    img_file = tkinter.PhotoImage(file=image_data)
-    image_canvas = canvas.create_image(0, 0, anchor="nw", image=img_file)
-
-
-    root.overrideredirect(True)
-    root.overrideredirect(False)
-    root.attributes('-fullscreen', True)
-    root.bind("<Escape>", quit_ui)
+    my_window = MyWindow(root)
+    my_window.display_image(image_file)
+    my_window.display_label('foooo')
+    root.after(3000, my_window.clear)
+    my_window.make_fullscreen()
     root.mainloop()
+
 
 if __name__ == '__main__':
     run()
