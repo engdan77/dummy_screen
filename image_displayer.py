@@ -39,6 +39,16 @@ class MyWindow:
         w = tk.Label(self.root, text=input_text)
         w.pack()
 
+    def display_text(self, input_text, font_size=180, width=450, heigth=100):
+        w = str(width)
+        h = str(heigth)
+        self.root.geometry('%sx%s' % (w,h))
+        label = tk.Label(self.root, text=input_text, background='black', foreground='white')
+        label.config(font=('courier', font_size, 'bold'))
+        label.grid(column=0, row=0)
+        self.root.columnconfigure(0, weight=1)
+        self.root.rowconfigure(0, weight=1)
+
     def quit_ui(*args):
         print args
         sys.exit(0)
@@ -54,9 +64,9 @@ def run():
     root = tk.Tk()
 
     my_window = MyWindow(root)
-    my_window.display_image(image_file)
-    my_window.display_label('foooo')
-    root.after(3000, my_window.clear)
+    # my_window.display_image(image_file)
+    my_window.display_text('foooo\nbaaar')
+    # root.after(3000, my_window.clear)
     my_window.make_fullscreen()
     root.mainloop()
 
