@@ -39,7 +39,7 @@ def queue_watcher(queue_object, delay=2):
         logging.info('queue: %s' % (queue_items,))
         if 'exit' in [item.get('command', None) for item in queue_items if type(item) is dict]:
             logging.info('exiting')
-            # sys.exit(0)
+            os._exit(0)
             break
         time.sleep(delay)
 
@@ -82,7 +82,7 @@ class MyWindow:
     def quit_ui(self, *args):
         print args
         self.q.put({"command": "exit"})
-        os._exit(0)
+        # os._exit(0)
         # sys.exit(0)
 
     def clear(self):
