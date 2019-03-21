@@ -4,6 +4,14 @@ import sys
 from io import BytesIO
 import StringIO
 from base64 import b64decode
+from jsonsocket import Server
+import logging
+import Queue
+import time
+import threading
+import os
+
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M', level=logging.DEBUG)
 
 
 def get_image_data(input_file=None, base64_data=None, input_format='png'):
@@ -16,8 +24,29 @@ def get_image_data(input_file=None, base64_data=None, input_format='png'):
     image.save(filename)
     return filename
 
+
+def startJsonServer(queue_object, host='0.0.0.0', port=9999):
+    server = Server(host, port)
+    while True:
+        data = server.accept().recv()
+        server.send({'status': 'ok'})
+        queue_object.put(data)
+
+
+def queue_watcher(queue_object, delay=2):
+    while True:
+        queue_items = list(queue_object.queue)
+        logging.info('queue: %s' % (queue_items,))
+        if 'exit' in [item.get('command', None) for item in queue_items if type(item) is dict]:
+            logging.info('exiting')
+            # sys.exit(0)
+            break
+        time.sleep(delay)
+
+
 class MyWindow:
-    def __init__(self, root):
+    def __init__(self, root, queue_object):
+        self.q = queue_object
         self.root = root
         self.root.configure(background="black")
 
@@ -33,6 +62,7 @@ class MyWindow:
         self.root.overrideredirect(True)
         self.root.overrideredirect(False)
         self.root.attributes('-fullscreen', True)
+        # self.root.bind("<Escape>", self.quit_ui)
         self.root.bind("<Escape>", self.quit_ui)
 
     def display_label(self, input_text):
@@ -49,25 +79,44 @@ class MyWindow:
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
 
-    def quit_ui(*args):
+    def quit_ui(self, *args):
         print args
-        sys.exit(0)
+        self.q.put({"command": "exit"})
+        os._exit(0)
+        # sys.exit(0)
 
     def clear(self):
         list = self.root.slaves()
         for l in list:
             l.destroy()
 
+
+def start_threads(theads_list):
+    threads = []
+    for target, args, name in theads_list:
+        t = threading.Thread(target=target, args=args, name=name)
+        threads.append(t)
+        t.start()
+    return threads
+
 def run():
+    q = Queue.Queue()
+    logging.info('starting')
+
     IMAGE ='./image.gif'
     image_file = get_image_data(input_file=IMAGE)
-    root = tk.Tk()
 
-    my_window = MyWindow(root)
+    root = tk.Tk()
+    my_window = MyWindow(root, q)
     # my_window.display_image(image_file)
     my_window.display_text('foooo\nbaaar')
     # root.after(3000, my_window.clear)
     my_window.make_fullscreen()
+
+    threads_list = ([queue_watcher, (q,), 'queue_watcher'],
+                    [startJsonServer, (q,), 'jsonServer'])
+    start_threads(threads_list)
+
     root.mainloop()
 
 

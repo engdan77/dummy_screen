@@ -1,4 +1,8 @@
-import json, socket
+import json
+import socket
+import logging
+
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M', level=logging.DEBUG)
 
 class Server(object):
     """
@@ -120,15 +124,8 @@ def _recv(socket):
     while char != '\n':
         length_str += char
         char = socket.recv(1)
-    total = int(length_str)
-    # use a memoryview to receive the data chunk by chunk efficiently
-    view = memoryview(bytearray(total))
-    next_offset = 0
-    while total - next_offset > 0:
-        recv_size = socket.recv_into(view[next_offset:], total - next_offset)
-        next_offset += recv_size
     try:
-        deserialized = json.loads(view.tobytes())
+        deserialized = json.loads(length_str)
+        return deserialized
     except (TypeError, ValueError), e:
-        raise Exception('Data received was not in JSON format')
-    return deserialized
+        logging.warning('Data received was not in JSON format')
