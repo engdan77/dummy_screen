@@ -39,8 +39,6 @@ def startJsonServer(queue_object, host='0.0.0.0', port=9999):
 
 
 def queue_watcher(queue_object, window_object, key_method_mapper, delay=2):
-    logging.info(locals())
-    logging.info(globals())
     while True:
         queue_items = list(queue_object.queue)
         if len(queue_items) > 0:
@@ -51,13 +49,12 @@ def queue_watcher(queue_object, window_object, key_method_mapper, delay=2):
                 break
             q = queue_object.get()
             logging.info('getting next in queue %s' % (q,))
-            for k, v in q.values():
+            for k in q.keys():
                 method_name = key_method_mapper.get(k, None)
                 if method_name:
-                    logging.info('found %s with args %s' % (method_name, v))
-                    found_method = getattr(locals('window_object'), method_name)
-                    found_method(**v)
-            q.task_done()
+                    logging.info('executing method %s with args %s' % (method_name, q[k]))
+                    found_method = getattr(locals()['window_object'], method_name)
+                    found_method(**q[k])
         time.sleep(delay)
 
 
@@ -87,6 +84,9 @@ class MyWindow:
         w.pack()
 
     def display_text(self, input_text='', font_size=180, width=450, heigth=100):
+    # def display_text(*args, **kwargs):
+        # logging.info(args)
+        # logging.info(kwargs)
         w = str(width)
         h = str(heigth)
         self.root.geometry('%sx%s' % (w,h))
@@ -125,7 +125,7 @@ def run():
     root = tk.Tk()
     my_window = MyWindow(root, q)
     # my_window.display_image(image_file)
-    my_window.display_text('foooo\nbaaar')
+    # my_window.display_text('foooo\nbaaar')
     # root.after(3000, my_window.clear)
     my_window.make_fullscreen()
 
