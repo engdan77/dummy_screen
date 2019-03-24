@@ -13,6 +13,8 @@ import os
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M', level=logging.DEBUG)
 
+method_mapper = {'text': 'display_text',
+                     'b64image': 'display_image'}
 
 def get_image_data(input_file=None, base64_data=None, input_format='png'):
     if input_file:
@@ -29,18 +31,33 @@ def startJsonServer(queue_object, host='0.0.0.0', port=9999):
     server = Server(host, port)
     while True:
         data = server.accept().recv()
-        server.send({'status': 'ok'})
-        queue_object.put(data)
+        if not data:
+            server.send({'status': 'error', 'message': 'not valid json'})
+        else:
+            server.send({'status': 'ok'})
+            queue_object.put(data)
 
 
-def queue_watcher(queue_object, delay=2):
+def queue_watcher(queue_object, window_object, key_method_mapper, delay=2):
+    logging.info(locals())
+    logging.info(globals())
     while True:
         queue_items = list(queue_object.queue)
-        logging.info('queue: %s' % (queue_items,))
-        if 'exit' in [item.get('command', None) for item in queue_items if type(item) is dict]:
-            logging.info('exiting')
-            os._exit(0)
-            break
+        if len(queue_items) > 0:
+            logging.info('queue: %s' % (queue_items,))
+            if 'exit' in [item.get('command', None) for item in queue_items if type(item) is dict]:
+                logging.info('exiting')
+                os._exit(0)
+                break
+            q = queue_object.get()
+            logging.info('getting next in queue %s' % (q,))
+            for k, v in q.values():
+                method_name = key_method_mapper.get(k, None)
+                if method_name:
+                    logging.info('found %s with args %s' % (method_name, v))
+                    found_method = getattr(locals('window_object'), method_name)
+                    found_method(**v)
+            q.task_done()
         time.sleep(delay)
 
 
@@ -69,7 +86,7 @@ class MyWindow:
         w = tk.Label(self.root, text=input_text)
         w.pack()
 
-    def display_text(self, input_text, font_size=180, width=450, heigth=100):
+    def display_text(self, input_text='', font_size=180, width=450, heigth=100):
         w = str(width)
         h = str(heigth)
         self.root.geometry('%sx%s' % (w,h))
@@ -80,7 +97,6 @@ class MyWindow:
         self.root.rowconfigure(0, weight=1)
 
     def quit_ui(self, *args):
-        print args
         self.q.put({"command": "exit"})
         # os._exit(0)
         # sys.exit(0)
@@ -113,7 +129,7 @@ def run():
     # root.after(3000, my_window.clear)
     my_window.make_fullscreen()
 
-    threads_list = ([queue_watcher, (q,), 'queue_watcher'],
+    threads_list = ([queue_watcher, (q, my_window, method_mapper), 'queue_watcher'],
                     [startJsonServer, (q,), 'jsonServer'])
     start_threads(threads_list)
 

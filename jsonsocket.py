@@ -128,4 +128,4 @@ def _recv(socket):
         deserialized = json.loads(length_str)
         return deserialized
     except (TypeError, ValueError), e:
-        logging.warning('Data received was not in JSON format')
+        logging.warning('Data received was not in JSON format %s' % length_str)
