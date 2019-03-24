@@ -11,10 +11,12 @@ import time
 import threading
 import os
 
+WORKDIR = './'
+
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M', level=logging.DEBUG)
 
 method_mapper = {'text': 'display_text',
-                     'b64image': 'display_image'}
+                 'image': 'display_image'}
 
 def get_image_data(input_file=None, base64_data=None, input_format='png'):
     if input_file:
@@ -22,7 +24,7 @@ def get_image_data(input_file=None, base64_data=None, input_format='png'):
     elif base64_data:
         io_in = StringIO(b64decode(base64_data))
     image = Image.open(io_in)
-    filename = 'tmp.gif'
+    filename = WORKDIR + 'tmp.gif'
     image.save(filename)
     return filename
 
@@ -64,7 +66,15 @@ class MyWindow:
         self.root = root
         self.root.configure(background="black")
 
-    def display_image(self, image_file):
+    def display_image(self, image_file=None, base64_data=None):
+        if image_file:
+            # convert to gif
+            image_file = get_image_data(input_file=image_file)
+        if base64_data:
+            image_file = WORKDIR + 'tmp.gif'
+            with open(image_file, 'w') as f:
+                f.write(b64decode(base64_data))
+        # display image
         self.canvas = tk.Canvas(self.root)
         self.canvas.pack(fill=tk.BOTH, expand=tk.YES)
         self.canvas.configure(background='black')
@@ -79,14 +89,8 @@ class MyWindow:
         # self.root.bind("<Escape>", self.quit_ui)
         self.root.bind("<Escape>", self.quit_ui)
 
-    def display_label(self, input_text):
-        w = tk.Label(self.root, text=input_text)
-        w.pack()
 
     def display_text(self, input_text='', font_size=180, width=450, heigth=100):
-    # def display_text(*args, **kwargs):
-        # logging.info(args)
-        # logging.info(kwargs)
         w = str(width)
         h = str(heigth)
         self.root.geometry('%sx%s' % (w,h))
@@ -119,8 +123,8 @@ def run():
     q = Queue.Queue()
     logging.info('starting')
 
-    IMAGE ='./image.gif'
-    image_file = get_image_data(input_file=IMAGE)
+    # IMAGE ='./image.gif'
+    # image_file = get_image_data(input_file=IMAGE)
 
     root = tk.Tk()
     my_window = MyWindow(root, q)
