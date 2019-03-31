@@ -71,9 +71,10 @@ class MyWindow:
             # convert to gif
             image_file = get_image_data(input_file=image_file)
         if base64_data:
-            image_file = WORKDIR + 'tmp.gif'
+            image_file = WORKDIR + 'tmp.png'
             with open(image_file, 'w') as f:
                 f.write(b64decode(base64_data))
+            image_file = get_image_data(input_file=image_file)
         # display image
         self.canvas = tk.Canvas(self.root)
         self.canvas.pack(fill=tk.BOTH, expand=tk.YES)
@@ -123,12 +124,15 @@ def run():
     q = Queue.Queue()
     logging.info('starting')
 
-    # IMAGE ='./image.gif'
+
     # image_file = get_image_data(input_file=IMAGE)
 
     root = tk.Tk()
     my_window = MyWindow(root, q)
-    # my_window.display_image(image_file)
+
+    # IMAGE = '/Users/edo/tmp/bubble.png'
+    # my_window.display_image(image_file=IMAGE)
+
     # my_window.display_text('foooo\nbaaar')
     # root.after(3000, my_window.clear)
     my_window.make_fullscreen()
