@@ -113,7 +113,7 @@ def _send(socket, data):
     except (TypeError, ValueError), e:
         raise Exception('You can only send JSON-serializable data')
     # send the length of the serialized data first
-    socket.send('%d\n' % len(serialized))
+    # socket.send('%d\n' % len(serialized))
     # send the serialized data
     socket.sendall(serialized)
 

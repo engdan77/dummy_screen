@@ -10,26 +10,25 @@ import Queue
 import time
 import threading
 import os
-
-WORKDIR = './'
+import argparse
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y-%m-%d %H:%M', level=logging.DEBUG)
 
 method_mapper = {'text': 'display_text',
                  'image': 'display_image'}
 
-def get_image_data(input_file=None, base64_data=None, input_format='png'):
+def get_image_data(input_file=None, base64_data=None, input_format='png', workdir='./'):
     if input_file:
         io_in = BytesIO(open(input_file, 'rb').read())
     elif base64_data:
         io_in = StringIO(b64decode(base64_data))
     image = Image.open(io_in)
-    filename = WORKDIR + 'tmp.gif'
+    filename = workdir + 'tmp.gif'
     image.save(filename)
     return filename
 
 
-def startJsonServer(queue_object, host='0.0.0.0', port=9999):
+def startJsonServer(queue_object, port=9999, host='0.0.0.0'):
     server = Server(host, port)
     while True:
         data = server.accept().recv()
@@ -61,20 +60,21 @@ def queue_watcher(queue_object, window_object, key_method_mapper, delay=2):
 
 
 class MyWindow:
-    def __init__(self, root, queue_object):
+    def __init__(self, root, queue_object, workdir='./'):
         self.q = queue_object
         self.root = root
         self.root.configure(background="black")
+        self.workdir = workdir
 
     def display_image(self, image_file=None, base64_data=None):
         if image_file:
             # convert to gif
-            image_file = get_image_data(input_file=image_file)
+            image_file = get_image_data(input_file=image_file, workdir=self.workdir)
         if base64_data:
-            image_file = WORKDIR + 'tmp.png'
+            image_file = self.workdir + 'tmp.png'
             with open(image_file, 'w') as f:
                 f.write(b64decode(base64_data))
-            image_file = get_image_data(input_file=image_file)
+            image_file = get_image_data(input_file=image_file, workdir=self.workdir)
         # display image
         self.canvas = tk.Canvas(self.root)
         self.canvas.pack(fill=tk.BOTH, expand=tk.YES)
@@ -121,24 +121,26 @@ def start_threads(theads_list):
     return threads
 
 def run():
+    parser = argparse.ArgumentParser(description='A very simple application for expose a json-socket server easily used for control text and images being displayed through tool such as NetCat')
+    parser.add_argument('--port', default=9999, help='Which port to open for incomming connections')
+    parser.add_argument('--workdir', default='./', help='Specify which path to use for temporary files, for example if you like to use a tmpfs in-memory')
+    args = parser.parse_args()
+
     q = Queue.Queue()
     logging.info('starting')
 
-
-    # image_file = get_image_data(input_file=IMAGE)
-
     root = tk.Tk()
-    my_window = MyWindow(root, q)
+    my_window = MyWindow(root, q, args.workdir)
 
     # IMAGE = '/Users/edo/tmp/bubble.png'
     # my_window.display_image(image_file=IMAGE)
-
-    # my_window.display_text('foooo\nbaaar')
+    # my_window.display_text('Hello\nWorld')
     # root.after(3000, my_window.clear)
+
     my_window.make_fullscreen()
 
     threads_list = ([queue_watcher, (q, my_window, method_mapper), 'queue_watcher'],
-                    [startJsonServer, (q,), 'jsonServer'])
+                    [startJsonServer, (q, args.port), 'jsonServer'])
     start_threads(threads_list)
 
     root.mainloop()

@@ -1,3 +1,19 @@
+**dummy_screen**
+
+Usage
+```
+usage: dummy_screen.py [-h] [--port PORT] [--workdir WORKDIR]
+
+A very simple application for expose a json-socket server easily used for
+control text and images being displayed through tool such as NetCat
+
+optional arguments:
+  -h, --help         show this help message and exit
+  --port PORT        Which port to open for incomming connections
+  --workdir WORKDIR  Specify which path to use for temporary files, for
+                     example if you like to use a tmpfs in-memory
+```
+
 
 **Samples**
 
