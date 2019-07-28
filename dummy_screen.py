@@ -89,6 +89,7 @@ class MyWindow:
         self.root.attributes('-fullscreen', True)
         # self.root.bind("<Escape>", self.quit_ui)
         self.root.bind("<Escape>", self.quit_ui)
+        self.root.bind("<Button-1>", self.quit_ui)
 
 
     def display_text(self, input_text='', font_size=180, width=450, heigth=100):
