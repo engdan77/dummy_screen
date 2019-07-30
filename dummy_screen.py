@@ -29,9 +29,10 @@ def get_image_data(input_file=None, base64_data=None, input_format='png', workdi
 
 
 def startJsonServer(queue_object, port=9999, host='0.0.0.0'):
-    server = Server(host, port)
+    server = Server(host, 9999)
     while True:
         data = server.accept().recv()
+        print('data: ', data)
         if not data:
             server.send({'status': 'error', 'message': 'not valid json'})
         else:
@@ -55,6 +56,7 @@ def queue_watcher(queue_object, window_object, key_method_mapper, delay=2):
                 if method_name:
                     logging.info('executing method %s with args %s' % (method_name, q[k]))
                     found_method = getattr(locals()['window_object'], method_name)
+                    found_method.im_self.remove_children()
                     found_method(**q[k])
         time.sleep(delay)
 
@@ -65,6 +67,10 @@ class MyWindow:
         self.root = root
         self.root.configure(background="black")
         self.workdir = workdir
+
+    def remove_children(self):
+        for k, v in self.root.children.items():
+            v.destroy()
 
     def display_image(self, image_file=None, base64_data=None):
         if image_file:
@@ -92,7 +98,7 @@ class MyWindow:
         self.root.bind("<Button-1>", self.quit_ui)
 
 
-    def display_text(self, input_text='', font_size=180, width=450, heigth=100):
+    def display_text(self, input_text='', font_size=120, width=450, heigth=100):
         w = str(width)
         h = str(heigth)
         self.root.geometry('%sx%s' % (w,h))
